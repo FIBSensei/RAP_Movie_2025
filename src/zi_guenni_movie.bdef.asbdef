@@ -1,0 +1,66 @@
+managed implementation in class zbp_guenni_movie unique;
+strict ( 2 );
+
+
+/* Parent Node Movie */
+define behavior for ZI_GUENNI_Movie alias Movie
+persistent table zabap_movie_a
+lock master
+authorization master ( instance )
+//etag master <field_name>
+{
+  create;
+  update;
+  delete;
+
+  // Zu dem Movie kann ein Rating erstellt werden
+  association _Ratings { create; }
+
+  validation validate_genre on save { create; }
+
+  //numbering : managed -> UUIDs werden automatisch erstellt
+  field ( readonly, numbering : managed ) MovieUuid;
+  field ( readonly ) CreatedAt, CreatedBy, LastChangedAt, LastChangedBy;
+  field ( mandatory : create ) Genre, PublishingYear, RuntimeInMin, Title;
+  field ( readonly : update ) Genre, PublishingYear, RuntimeInMin, Title;
+
+
+  // corresponding -> nur Verschiedene Felder müssen deklariert werden
+  mapping for zabap_movie_a corresponding
+    {
+      CreatedAt      = created_at;
+      CreatedBy      = created_by;
+      ImageUrl       = image_url;
+      LastChangedAt  = last_changed_at;
+      LastChangedBy  = last_changed_by;
+      MovieUuid      = movie_uuid;
+      PublishingYear = publishing_year;
+      RuntimeInMin   = runtime_in_min;
+    }
+}
+
+/* Child Node Rating */
+define behavior for ZI_GUENNI_Rating alias Rating
+persistent table zabap_rating_a
+// Bei Bearbeitung werden Movie und zugehörige Ratings gesperrt
+lock dependent by _Movie
+// Authoriserungen abhänging von Movie
+authorization dependent by _Movie
+//etag master <field_name>
+{
+  update;
+  delete;
+  association _Movie;
+
+  field ( readonly, numbering : managed ) RatingUuid;
+  field ( readonly ) MovieUuid;
+
+  mapping for zabap_rating_a corresponding
+    {
+      MovieUuid  = movie_uuid;
+      RatingDate = rating_date;
+      RatingUuid = rating_uuid;
+      UserName   = user_name;
+    }
+
+}
